@@ -5,6 +5,7 @@
         <div v-for="(order, index) in orders" :key="index">
           <v-card flat class="mx-auto" max-width="1000">
             <v-card-title>
+              # {{ order.id }} -
               Tienda: {{ order.store }}
               <v-spacer></v-spacer>
               Total: {{ order.total }}
@@ -30,6 +31,7 @@
 import axios from 'axios'
 
 export default {
+  name: 'orders',
   data () {
     return {
       headers: [
@@ -56,7 +58,7 @@ export default {
   methods: {
     async getOrders () {
       try {
-        const response = await axios.get('http://localhost:8000/get-orders/' + this.$store.state.user.user)
+        const response = await axios.get(`${process.env.BASE_URL}/get-orders/${this.$store.state.user.user}`)
         console.log(response)
 
         for (let i = 0; i < response.data.length; i++) {

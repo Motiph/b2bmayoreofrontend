@@ -1,4 +1,6 @@
 import cookieparser from 'cookieparser'
+import Cookie from 'js-cookie'
+
 import axios from 'axios'
 
 export const state = () => ({
@@ -6,6 +8,7 @@ export const state = () => ({
     dialog: false
   },
   user: null,
+  username: '',
   token: ''
 })
 
@@ -19,6 +22,9 @@ export const mutations = {
   SET_USER: (state, payload) => {
     state.user = payload
   },
+  SET_USER_NAME: (state, payload) => {
+    state.username = payload
+  },
   SET_TOKEN: (state, payload) => {
     state.token = payload
   }
@@ -26,7 +32,7 @@ export const mutations = {
 
 async function getUserBytoken(token) {
   try {
-    const response = await axios.post('http://localhost:8000/get-token/', {
+    const response = await axios.post(`${process.env.BASE_URL}/get-token/`, {
       key: token
     })
     return response
@@ -43,18 +49,23 @@ export const actions = {
   setUser({ commit }, payload) {
     commit('SET_USER', payload)
   },
+  setUserName({ commit }, payload) {
+    commit('SET_USER_NAME', payload)
+  },
   setToken({ commit }, payload) {
     commit('SET_TOKEN', payload)
   },
-  
+
+  async logout({ commit }) {
+    Cookie.remove('b2bmayoreotoken')
+    await commit('SET_USER', null)
+    await commit('SET_TOKEN', '')
+    this.$router.push('/login')
+    // location.href = '/login'
+  },
+
   async nuxtServerInit({ commit }, { req }) {
       
-    // Pide la configuracion del sitio al backend
-    // const siteConfig = await getSiteConfig()
-    // if (siteConfig) {
-    //   commit('SET_SITE_CONFIG', siteConfig.data)
-    // }
-
     if (process.server && process.static) return
     if (!req.headers.cookie) return
     const parsed = cookieparser.parse(req.headers.cookie)
@@ -62,19 +73,11 @@ export const actions = {
     if (!accessTokenCookie) return
 
     const user = await getUserBytoken(accessTokenCookie)
-
-    // this.$store.dispatch('setUser', response.data.user)
-    // this.$store.dispatch('setToken', response.data.token)
-    // Cookie.set('b2bmayoreotoken', response.data.token)
-
+    console.log(user)
     if (user) {
+      commit('SET_USER_NAME', user.data.username)
       commit('SET_USER', user.data.user)
     }
-    // console.log('cuenta')
-    // console.log(account.data)
-    // if (account) {
-    //   commit('users/SET_USER', account.data.user)
-    //   return
-    // }
+
   }
 }

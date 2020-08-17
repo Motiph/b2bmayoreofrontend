@@ -43,13 +43,6 @@
     <v-row>
       <v-col cols="12" class="">
         <v-card class="mx-auto" max-width="1000">
-          <v-card-title>
-            <v-spacer></v-spacer>
-            <v-btn depressed="">
-              <v-icon left small>fas fa-shopping-cart</v-icon>
-              Agregar al carrito
-            </v-btn>
-          </v-card-title>
           <v-card-text>
             <v-data-table
               :headers="headers"
@@ -59,6 +52,7 @@
               flat
             >
             <template v-slot:item="props">
+
               <tr style="padding-top: 10px" :class="{'row-color': props.item.alter}">
                 <td>
                   <span>{{ props.item.lineCode }}</span>
@@ -81,11 +75,11 @@
                             {{ item.name }}:
                             <div style="float: right;"  >
                               <span class="mx-2 font-weight-black">{{ item.qty }}</span>  
-                              <select v-model="item.selectedQty" @change="addToCart(props.item)" name="cars" class="store-qty" id="cars" >
+                              <select v-model="item.selectedQty" name="" class="store-qty" id="" >
                                 <option value="0" >0</option>
                                 <option :value="qty"  v-for="(qty, index) in item.qty" :key="index">{{ qty }}</option>
-              
                               </select>
+                              <v-btn @click="addToCart(props.item, item)" small depressed>Agregar</v-btn>
                             </div>  
                           
                         </v-col>
@@ -119,6 +113,26 @@
         </v-card-text>
       </v-card>
     </v-dialog>
+
+    <v-snackbar
+      v-model="snackbar.show"
+      top
+      timeout="1000"
+      color="success"
+    >
+      {{ snackbar.text }}
+
+      <template v-slot:action="{ attrs }">
+        <v-btn
+          color="white"
+          text
+          v-bind="attrs"
+          @click="snackbar.show = false"
+        >
+          Cerrar
+        </v-btn>
+      </template>
+    </v-snackbar>
   </v-container>
 </template>
 
@@ -135,6 +149,10 @@ export default {
   },
   data () {
     return {
+      snackbar: {
+        show: false,
+        text: 'El producto fue agregado al carrito'
+      },
       url: 'http://189.223.128.30:8081/',
       partNumber: '',
       line: '',
@@ -201,23 +219,77 @@ export default {
       this.stores = stores
     },
 
-    addToCart (product) {
+    addToCart (product, stock) {
       if (process.browser) {
+        if (parseInt(stock.selectedQty) > 0) {
+          let shoppingCart = JSON.parse(localStorage.getItem('mayoreoShoppingCart'))
 
-        let cart = JSON.parse(localStorage.getItem('mayoreoShoppingCart'))
-        console.log(cart)
-        let item = cart.find(obj => {
-          return obj.partNumber === product.partNumber && obj.lineCode === product.lineCode
-        })
+          let item = shoppingCart.find(obj => {
+            return obj.partNumber === product.partNumber && obj.lineCode === product.lineCode && obj.branchId === stock.branchId
+          })
 
-        if (item === undefined) {
-          cart.push(product)
+          // Agregamos la tienda al producto en el carrito para identificarlo
+          let newShoppingCartProduct = {
+            branchId: stock.branchId,
+            description: product.description,
+            lineCode: product.lineCode,
+            partNumber: product.partNumber,
+            price: product.price,
+            stock: stock
+          }
+
+          if (item === undefined) {
+            shoppingCart.push(newShoppingCartProduct)
+          } else {
+            // si el producto ya esta en el carrito sacamos su index y lo sustituimos
+            let idx = shoppingCart.indexOf(item)
+            shoppingCart[idx] = newShoppingCartProduct
+          }
+
+          console.log(shoppingCart)
+          
+          localStorage.setItem('mayoreoShoppingCart', JSON.stringify(shoppingCart))
+          this.snackbar.show = true
+
+        } else {
+          confirm('Seleccione una cantidad antes de agregar al carrito')
         }
-
-
-        localStorage.setItem('mayoreoShoppingCart', JSON.stringify(cart))
       }
+      // if (process.browser) {
+        
+
+      //   let cart = JSON.parse(localStorage.getItem('mayoreoShoppingCart'))
+      //   console.log(cart)
+      //   let item = cart.find(obj => {
+      //     return obj.partNumber === product.partNumber && obj.lineCode === product.lineCode
+      //   })
+
+      //   if (item === undefined) {
+      //     cart.push(product)
+      //   }
+
+
+      //   localStorage.setItem('mayoreoShoppingCart', JSON.stringify(cart))
+      // }
     },
+    // addToCart (product) {
+    //   console.log('agreando al carrito')
+    //   if (process.browser) {
+
+    //     let cart = JSON.parse(localStorage.getItem('mayoreoShoppingCart'))
+    //     console.log(cart)
+    //     let item = cart.find(obj => {
+    //       return obj.partNumber === product.partNumber && obj.lineCode === product.lineCode
+    //     })
+
+    //     if (item === undefined) {
+    //       cart.push(product)
+    //     }
+
+
+    //     localStorage.setItem('mayoreoShoppingCart', JSON.stringify(cart))
+    //   }
+    // },
 
     setItems (items) {
       console.log('items finales')
@@ -281,17 +353,18 @@ export default {
               }
 
               if (parser2.StockCheckReply[0].Part[0].$.QtyAvail > 0) {
+                let branchIdPaceSetter = parser2.StockCheckReply[0].Header[0].$.Branch === 1 ? '0' + parser2.StockCheckReply[0].Header[0].$.Branch : parser2.StockCheckReply[0].Header[0].$.Branch
                 let qtyInMainStore = {
-                  branchId: parser2.StockCheckReply[0].Header[0].$.Branch,
+                  branchId: branchIdPaceSetter,
                   name: 
-                    this.getStore(parser2.StockCheckReply[0].Header[0].$.Branch) === undefined ? 
-                    parser2.StockCheckReply[0].Header[0].$.Branch : 
-                    this.getStore(parser2.StockCheckReply[0].Header[0].$.Branch).name,
+                    this.getStore(branchIdPaceSetter) === undefined ? 
+                    branchIdPaceSetter : 
+                    this.getStore(branchIdPaceSetter).name,
                   qty: parseInt(parser2.StockCheckReply[0].Part[0].$.QtyAvail),
                   nameWithQty:
                     parser2.StockCheckReply[0].Part[0].$.QtyAvail +
                     ' - ' +
-                    parser2.StockCheckReply[0].Header[0].$.Branch,
+                    branchIdPaceSetter,
                   selectedQty: 0
                 }
                 item.stock.push(qtyInMainStore)
@@ -299,14 +372,18 @@ export default {
 
               if (parser2.StockCheckReply[0].Part[0].AltLoc) {
                 for (let alt in parser2.StockCheckReply[0].Part[0].AltLoc) {
+                  
+                  let branchIdPaceSetter = parser2.StockCheckReply[0].Part[0].AltLoc[alt].$.Branch.length === 1 ? '0' + parser2.StockCheckReply[0].Part[0].AltLoc[alt].$.Branch : parser2.StockCheckReply[0].Part[0].AltLoc[alt].$.Branch
+
+
                   item.hasStock = true
                   item.stock.push({
-                    branchId: parser2.StockCheckReply[0].Part[0].AltLoc[alt].$.Branch,
-                    name: this.getStore(parser2.StockCheckReply[0].Part[0].AltLoc[alt].$.Branch) === undefined ?
-                      parser2.StockCheckReply[0].Part[0].AltLoc[alt].$.Branch :
-                      this.getStore(parser2.StockCheckReply[0].Part[0].AltLoc[alt].$.Branch).name,
+                    branchId: branchIdPaceSetter,
+                    name: this.getStore(branchIdPaceSetter) === undefined ?
+                      branchIdPaceSetter :
+                      this.getStore(branchIdPaceSetter).name,
                     qty: parseInt(parser2.StockCheckReply[0].Part[0].AltLoc[alt].$.Qty),
-                    nameWithQty: parser2.StockCheckReply[0].Part[0].AltLoc[alt].$.Qty + ' - ' + 'Tienda ' +parser2.StockCheckReply[0].Part[0].AltLoc[alt].$.Branch,
+                    nameWithQty: parser2.StockCheckReply[0].Part[0].AltLoc[alt].$.Qty + ' - ' + 'Tienda ' + branchIdPaceSetter,
                     selectedQty: 0
                   })
                 }
@@ -348,11 +425,13 @@ export default {
             alterOf: article.partNumber
           }
           if (parseInt(alternates[i].$.QtyAvail) > 0) {
+            let branchIdPaceSetter = branch === 1 ? '0' + branch : branch
+
             let tmpObj = {
-              branchId: branch,
-              name: this.getStore(branch) === undefined ? branch : this.getStore(branch).name,
+              branchId: branchIdPaceSetter,
+              name: this.getStore(branchIdPaceSetter) === undefined ? branch : this.getStore(branchIdPaceSetter).name,
               qty: parseInt(alternates[i].$.QtyAvail),
-              nameWithQty: alternates[i].$.QtyAvail + ' - ' + branch,
+              nameWithQty: alternates[i].$.QtyAvail + ' - ' + branchIdPaceSetter,
               selectedQty: 0
             }
             item.hasStock = true
@@ -361,15 +440,17 @@ export default {
 
           if (alternates[i].AltLoc) {
             for (let alt in alternates[i].AltLoc) {
+              let branchIdPaceSetter = alternates[i].AltLoc[alt].$.Branch.length === 1 ? '0' + alternates[i].AltLoc[alt].$.Branch : alternates[i].AltLoc[alt].$.Branch
+
               article.hasStock = true
               item.hasStock = true
               item.stock.push({
-                branchId: alternates[i].AltLoc[alt].$.Branch,
-                name: this.getStore(alternates[i].AltLoc[alt].$.Branch) === undefined ? 
-                  alternates[i].AltLoc[alt].$.Branch : 
-                  this.getStore(alternates[i].AltLoc[alt].$.Branch).name,
+                branchId: branchIdPaceSetter,
+                name: this.getStore(branchIdPaceSetter) === undefined ? 
+                  branchIdPaceSetter : 
+                  this.getStore(branchIdPaceSetter).name,
                 qty: parseInt(alternates[i].AltLoc[alt].$.Qty),
-                nameWithQty: alternates[i].AltLoc[alt].$.Qty + ' - ' + 'Tienda ' + alternates[i].AltLoc[alt].$.Branch,
+                nameWithQty: alternates[i].AltLoc[alt].$.Qty + ' - ' + 'Tienda ' + branchIdPaceSetter,
                 selectedQty: 0
               })
             }
@@ -388,15 +469,29 @@ export default {
     },
 
     async searchPacesetter (line, partNumber) {
+
+      let stores = []
+      stores.push(this.$store.state.user.main_store.pace_store_id)
+
+      for (let group = 0; group < this.$store.state.user.groups.length; group++) {
+        for (let store = 0; store < this.$store.state.user.groups[group].stores.length; store++) {
+          if (!stores.includes(this.$store.state.user.groups[group].stores[store].pace_store_id)) {
+            stores.push(this.$store.state.user.groups[group].stores[store].pace_store_id)
+          }
+        }
+      }
+
+      console.log('stores')
+      console.log(stores)
       try {
         let xml =
           '<?xml version="1.0" encoding="UTF-8" ?>' +
           '<OptiCat>' +
           '<StockCheck>' +
           '<Header Src="b2b" Branch="' +
-          '010328212002' +
+          stores.join('') +
           '" AcctNum="' +
-          '10728' +
+          this.$store.state.username +
           '">' +
           '</Header>' +
           '<Part Desc=' +
@@ -415,6 +510,7 @@ export default {
           ' QtyReq="1"/>' +
           '</StockCheck>' +
           '</OptiCat>'
+        console.log(xml)
         const response = await axios.post(this.url, xml, { headers: { 'Content-Type': 'text/xml' } })
         console.log('Response de xml')
         console.log(response.data)

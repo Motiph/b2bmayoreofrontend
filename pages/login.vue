@@ -46,22 +46,27 @@ export default {
   data () {
     return {
       loading: false,
-      username: '10728',
-      password: 'Solecismo1'
+      username: '',
+      password: ''
     }
+  },
+
+  mounted () {
+    console.log(process.env.BASE_URL)
   },
   methods: {
     async login () {
       if (this.username !== '' && this.password !== '') {
         this.loading = true
         try {
-          const response = await axios.post('http://localhost:8000/login/', {
+          const response = await axios.post(`${process.env.BASE_URL}/login/`, {
             username: this.username,
             password: this.password
           })
 
           this.$store.dispatch('setUser', response.data.user)
           this.$store.dispatch('setToken', response.data.token)
+          this.$store.dispatch('setUserName', response.data.username)
           Cookie.set('b2bmayoreotoken', response.data.token)
           console.log(response)
           this.$router.push('/')

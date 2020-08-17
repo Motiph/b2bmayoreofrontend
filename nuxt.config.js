@@ -71,6 +71,10 @@ export default {
       icons: 'fa'
     }
   },
+
+  env: {
+    BASE_URL: process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'http://rdv.bluesage.tk:83'
+  },
   /*
   ** Build configuration
   ** See https://nuxtjs.org/api/configuration-build/

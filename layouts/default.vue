@@ -15,6 +15,9 @@
     <v-btn  class="ma-2"  depressed @click="$router.push('/orders')">
       Ordenes
     </v-btn>
+    <v-btn  class="ma-2"  depressed @click="logout">
+      Salir
+    </v-btn>
     </v-app-bar>
     <v-img style="padding-top: 64px; border-bottom: 1px solid #fff" max-height="200" :src="require('~/assets/images/background.png')">
       <template>
@@ -29,16 +32,15 @@
     </v-img>
 
     <v-main>
-      <nuxt  keep-alive/>
+      <nuxt  keep-alive :keep-alive-props="{ exclude: ['cart', 'orders'] }"/>
     </v-main>
-    <v-footer
+    <!-- <v-footer
       class=""
       :absolute="!fixed"
       app
     >
       <v-img  class="mx-auto" max-width="800"  :src="require('~/assets/images/logo.png')"></v-img>
-      <!-- <span>&copy; {{ new Date().getFullYear() }}</span> -->
-    </v-footer>
+    </v-footer> -->
   </v-app>
 </template>
 
@@ -70,6 +72,9 @@ export default {
   methods: {
     openShoppingCart () {
       this.$store.dispatch('shoppingCartDialog', true)
+    },
+    async logout () {
+      await this.$store.dispatch('logout')
     }
     
   }
