@@ -467,7 +467,6 @@ export default {
 
       }
     },
-
     async searchPacesetter (line, partNumber) {
 
       let stores = []
@@ -511,15 +510,69 @@ export default {
           '</StockCheck>' +
           '</OptiCat>'
         console.log(xml)
-        const response = await axios.post(this.url, xml, { headers: { 'Content-Type': 'text/xml' } })
+        const response = await axios.post(`${process.env.BASE_URL}/search-pacesetter/`, {
+          xml: xml
+        })
         console.log('Response de xml')
-        console.log(response.data)
+        console.log(response)
         return response
       } catch (error) {
         console.log(error)
         console.log(error.response)
       }
     },
+    // async searchPacesetter (line, partNumber) {
+
+    //   let stores = []
+    //   stores.push(this.$store.state.user.main_store.pace_store_id)
+
+    //   for (let group = 0; group < this.$store.state.user.groups.length; group++) {
+    //     for (let store = 0; store < this.$store.state.user.groups[group].stores.length; store++) {
+    //       if (!stores.includes(this.$store.state.user.groups[group].stores[store].pace_store_id)) {
+    //         stores.push(this.$store.state.user.groups[group].stores[store].pace_store_id)
+    //       }
+    //     }
+    //   }
+
+    //   console.log('stores')
+    //   console.log(stores)
+    //   try {
+    //     let xml =
+    //       '<?xml version="1.0" encoding="UTF-8" ?>' +
+    //       '<OptiCat>' +
+    //       '<StockCheck>' +
+    //       '<Header Src="b2b" Branch="' +
+    //       stores.join('') +
+    //       '" AcctNum="' +
+    //       this.$store.state.username +
+    //       '">' +
+    //       '</Header>' +
+    //       '<Part Desc=' +
+    //       '"' +
+    //       '' +
+    //       '" ' +
+    //       'LineCode=' +
+    //       '"' +
+    //       line +
+    //       '" ' +
+    //       'SeqNum="1"' +
+    //       ' LineNum="1" PartNum=' +
+    //       '"' +
+    //       partNumber +
+    //       '"' +
+    //       ' QtyReq="1"/>' +
+    //       '</StockCheck>' +
+    //       '</OptiCat>'
+    //     console.log(xml)
+    //     const response = await axios.post(this.url, xml, { headers: { 'Content-Type': 'text/xml' } })
+    //     console.log('Response de xml')
+    //     console.log(response.data)
+    //     return response
+    //   } catch (error) {
+    //     console.log(error)
+    //     console.log(error.response)
+    //   }
+    // },
 
     async xmlParser (stringXml) {
       var response = ''

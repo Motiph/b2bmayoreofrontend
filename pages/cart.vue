@@ -74,6 +74,7 @@ export default {
   name: 'cart',
   data () {
     return {
+      url: 'http://189.223.128.30:8081/',
       loading: false,
       headers: [
         {
@@ -139,6 +140,29 @@ export default {
       localStorage.setItem('mayoreoShoppingCart', JSON.stringify(shoppingCart))
     },
 
+    async sendOrderToPacesetter(order) {
+      try {
+        let xml = '<OptiCat TransId="' + order.id + '"><Order>' +
+        '<header account="' + this.$store.state.username + '" branch="' + order.store + '"' +
+        ' type="Normal" fillflag="backord" ponumber="1001"></header>'
+
+        let items = JSON.parse(order.items)
+
+        for (let i = 0; i < items.length; i++) {
+          xml += '<part linecode="' + items[i].lineCode + '" partno="' + items[i].partNumber + '" qtyreq="' + items[i].qty + '"/>'
+        }
+        xml += '</Order></OptiCat>'
+        console.log(xml)
+        const response = await axios.post(this.url, xml)
+        console.log(response)
+  
+      } catch (error) {
+        console.log(error)
+        console.log(error.response)
+      }
+    },
+
+
     async saveOrder() {
       console.log('guardando orden')
       this.loading = true
@@ -189,9 +213,12 @@ export default {
             total: total.toFixed(2)
           }
           console.log(data)
+
+
           try {
             const response = await axios.post(`${process.env.BASE_URL}/save-order/`, data)
             console.log(response)
+            await this.sendOrderToPacesetter(response.data)
           } catch (error) {
             console.log(error)
             console.log(error.response)
